@@ -7,7 +7,7 @@ using namespace std;
 
 //TODO: Could also do with bit shifting
 int is_power_of_two(int n) {
-    if (n == 0) {
+    if (n == 0) { 
         return 0;
     }
     while (n != 1) {
