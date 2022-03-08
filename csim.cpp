@@ -2,6 +2,7 @@
 #include <string>
 #include <cstdlib>
 #include <stdbool.h>
+#include <sstream>
 
 using namespace std;
 
@@ -9,7 +10,7 @@ using namespace std;
 int is_power_of_two(int n) {
     if (n == 0) {
         return 0;
-    } 
+    }
     while (n != 1) {
         n /= 2;
         if (n%2 != 0 && n != 1) {
@@ -19,8 +20,24 @@ int is_power_of_two(int n) {
     return 1; //if we get out of the loop return 1
 }
 
-int main(int argc, char** argv)
-{
+int main(int argc, char** argv) {
+    string input_line;
+    string first_arg;
+    string second_arg;
+    string third_arg;
+    while(cin) {
+        getline(cin, input_line);
+        stringstream ss(input_line);
+        ss >> first_arg;
+        ss >> second_arg;
+        ss >> third_arg;
+        cout << "arg1 is:|" << first_arg<< "|\n";
+        cout << "arg2 is:|" << second_arg << "|\n";
+        cout << "arg3 is:|" << third_arg << "|\n";
+        cout << input_line << endl;
+    }
+    //TODO: Check if there are a correct number of inputs
+
     int sets_in_cache = atoi(argv[1]); //atoi could fail when we have 1234bad_input 
     int blocks_in_set = atoi(argv[2]);
     int bytes_in_block = atoi(argv[3]);
@@ -30,7 +47,7 @@ int main(int argc, char** argv)
 
     bool sets_in_cache_is_valid = is_power_of_two(sets_in_cache); //atoi could fail when we have 1234bad_input 
     bool blocks_in_set_is_valid = is_power_of_two(blocks_in_set);
-    bool bytes_in_block_is_valid = is_power_of_two(bytes_in_block);
+    bool bytes_in_block_is_valid = is_power_of_two(bytes_in_block) && bytes_in_block >= 4;
     bool allocate_type_is_valid = allocate_type.compare("write-allocate")==0 || allocate_type.compare("no-write-allocate")==0;
     bool write_type_is_valid = (write_type.compare("write-through")==0 || write_type.compare("write-back")==0);
     bool eviction_type_is_valid = (eviction_type.compare("lru")==0 || eviction_type.compare("fifo")==0);
