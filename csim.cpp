@@ -6,6 +6,16 @@
 
 using namespace std;
 
+//TODO: should we name this a Block
+class Slot {
+    string tag;
+    bool dirty_bit;
+}
+
+class Set {
+    vector<Slot> slots;
+}
+
 //TODO: Could also do with bit shifting
 int is_power_of_two(int n) {
     if (n == 0) {
