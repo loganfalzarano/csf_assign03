@@ -79,22 +79,31 @@ class Cache {
 
 //TODO: Could also do with bit shifting
 int is_power_of_two(int n) {
-    if (n == 0) {
-        return 0;
-    }
-    while (n != 1) {
-        n /= 2;
-        if (n%2 != 0 && n != 1) {
-            return 0;
-        }
-    }
-    return 1; //if we get out of the loop return 1
+    // if (n == 0) {
+    //     return 0;
+    // }
+    // while (n != 1) {
+    //     n /= 2;
+    //     if (n%2 != 0 && n != 1) {
+    //         return 0;
+    //     }
+    // }
+    // return 1; //if we get out of the loop return 1
+    return (n != 0) && ((n & (n - 1)) == 0); // pretty sure this works but same thing either way
 }
 
 //returns true if there are enough command line arguments and they are all valid
 bool check_command_line_args(int sets_in_cache, int blocks_in_set, int bytes_in_block, string allocate_type, string write_type, string eviction_type, int argc, char** argv) {
     if (argc != 7) {
-        cout << "Too many or too few command line arguments (there must be exactly 7).\n";
+        cout << "Too many or too few command line arguments (there must be exactly 7).\n"; // should print to stderr i think
+        return false;
+    }
+    // if (allocate_type.compare("no-write-allocate") && write_type.compare("write-back")) {
+    //     std::cerr << "combine no-write-allocate with write-back.\n";
+    //     return false;
+    // }
+    if (bytes_in_block < 4) {
+        std::cerr << "cannot have block size is less than 4.\n";
         return false;
     }
 
@@ -131,7 +140,9 @@ int main(int argc, char** argv) {
     int sets_in_cache, blocks_in_set, bytes_in_block;
     string allocate_type, write_type, eviction_type;
 
-    check_command_line_args(sets_in_cache, blocks_in_set, bytes_in_block, allocate_type, write_type, eviction_type, argc, argv);
+    if (!check_command_line_args(sets_in_cache, blocks_in_set, bytes_in_block, allocate_type, write_type, eviction_type, argc, argv)) {
+        return 1; // Exit with a non-zero exit code
+    }
 
     //Once command line args are checked, so we can initialize our cache
     Cache cache(sets_in_cache, blocks_in_set, bytes_in_block, allocate_type, write_type, eviction_type);
