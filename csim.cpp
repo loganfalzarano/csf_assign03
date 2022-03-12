@@ -73,19 +73,14 @@ class Cache {
             offset_bits = bitshift_log_base2(bytes_in_block);
             index_bits = bitshift_log_base2(sets_in_cache);
             tag_bits = 32 - index_bits - offset_bits;
-            cout << "Offset bits:" << offset_bits << endl;
-            cout << "Index bits:" << index_bits << endl;
-            cout << "Tag bits:" << tag_bits << endl;
+            // cout << "Offset bits:" << offset_bits << endl;
+            // cout << "Index bits:" << index_bits << endl;
+            // cout << "Tag bits:" << tag_bits << endl;
 
             //TODO: Instantiate vector<Set>
-            cout << "inside construfctor: " << sets_in_cache;
             for(int i = 0; i < sets_in_cache; i++) {
                 Set new_set;
                 cache.push_back(new_set);
-            }
-
-            for(int i = 0; i < sets_in_cache; i++) {
-                cout << cache[i].slots.empty();
             }
         }
 
@@ -101,15 +96,14 @@ class Cache {
 
         //method to give a trace on a give input file
         void begin_trace() {
-
-            load_value(1234, 1234);
             //TODO determine if we need to deal with invalid trace files
             string input_line;
             while(getline(cin, input_line)) {
+                cout << input_line << endl;
                 string read_or_write = input_line.substr(0, 1);
                 string string_memory_address = input_line.substr(4, 8); //we don't really care about the offset, though
                 //cout << "memory address is:|" << string_memory_address << "|\n";
-                u_int32_t memory_address = stoi(string_memory_address, 0, 16);
+                u_int32_t memory_address = stoul(string_memory_address, 0, 16);
                 //cout << "real memory address is:|" << memory_address << "|\n";
 
                 //u_int32_t tag = memory_address & (((1UL << tag_bits) - 1) << (32 - tag_bits));
@@ -117,35 +111,52 @@ class Cache {
                 u_int32_t tag = memory_address >> (32 - tag_bits);
                 u_int32_t index = (memory_address & (((1UL << index_bits) - 1) << offset_bits)) >> offset_bits;
 
-                cout << "tag is: " << tag << endl;
-                cout << "index is: " << index << endl;
+                //cout << "tag is: " << tag << endl;
+                //cout << "index is: " << index << endl;
 
                 cout << input_line << endl;
 
                 if(read_or_write.compare("l") == 0) {
-                    cout << "about to load a value" << endl;
+                    //cout << "about to load a value" << endl;
                     load_value(index, tag);
-                    cout << "returned";
+                    //cout << "returned";
                 }
                 
 
                 //1110 0000 cout << "r/w is:|" << read_or_write<< "|\n";
                 
-                cout << input_line << endl;
+                
             }
         }
 
         void load_value(u_int32_t index, u_int32_t tag) {
+            total_loads++;
+            cout << "|" << total_loads << "|" << endl;
             Set set_accessed = cache[index];
             if (set_accessed.slots.empty()) {
-                cout << "this was a load miss\n\n" << endl;
+                //cout << "this was a load miss\n\n" << endl;
+                load_misses++;
+                //cout << "bytes in block is:" << bytes_in_block;
+                total_cycles += (100 * (bytes_in_block / 4));
                 Slot new_slot = Slot(tag, true);
                 cache[index].slots.push_back(new_slot);
             } else {
-                cout << "this was a load hit\n\n";
+                //cout << "this was a load hit\n\n";
+                load_hits++;
+                total_cycles++;
             }
             
             
+        }
+
+        void display_stats() {
+            cout << total_loads << endl;
+            cout << total_stores << endl;
+            cout << load_hits << endl;
+            cout << load_misses << endl;
+            cout << store_hits << endl;
+            cout << store_misses << endl;
+            cout << total_cycles << endl;
         }
 };
 
@@ -216,6 +227,7 @@ int main(int argc, char** argv) {
     //Once command line args are checked, so we can initialize our cache
     Cache cache(sets_in_cache, blocks_in_set, bytes_in_block, allocate_type, write_type, eviction_type);
     cache.begin_trace();
+    cache.display_stats();
   
     return 0;
 }
