@@ -9,26 +9,26 @@ using namespace std;
 
 //TODO: should we name this a Block
 class Slot {
-    string tag;
+    unsigned char tag; //we want this to be a binary value
     bool is_valid;
-    bool dirty_bit;
+    bool is_dirty;
     unsigned access_ts;
     unsigned load_ts;
 
     public:
         //constructor for creating a slot
-        Slot(string tag, bool dirty_bit) {
+        Slot(unsigned char tag, bool dirty_bit) {
             this->tag = tag;
-            this->dirty_bit = dirty_bit;
+            this->is_dirty = is_dirty;
         }
 
         //getter methods
-        string get_tag() {
+        unsigned char get_tag() {
             return this->tag;
         }
 
         bool get_dirty_bit() {
-            return this->dirty_bit;
+            return this->is_dirty;
         }
 };
 
@@ -64,6 +64,10 @@ class Cache {
             this->write_type = write_type;
             this->eviction_type = eviction_type;
             //TODO: Instantiate vector<Set>
+            for(int i = 0; i < sets_in_cache; i++) {
+                Set new_set;
+                cache.push_back(new_set);
+            }
         }
 
         //method to give a trace on a give input file
@@ -77,7 +81,11 @@ class Cache {
                 cout << "memory address is is:|" << memory_address << "|\n";
                 cout << input_line << endl;
             }
-        }          
+        }
+
+        void load_value() {
+
+        }
 };
 
 int is_power_of_two(int n) {
