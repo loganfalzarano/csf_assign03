@@ -109,6 +109,7 @@ class Cache {
                 //u_int32_t tag = memory_address & (((1UL << tag_bits) - 1) << (32 - tag_bits));
                 //u_int32_t index = memory_address & (((1UL << index_bits) - 1) << offset_bits);
                 u_int32_t tag = memory_address >> (32 - tag_bits);
+                //TODO: Make this more simple
                 u_int32_t index = (memory_address & (((1UL << index_bits) - 1) << offset_bits)) >> offset_bits;
 
                 //cout << "tag is: " << tag << endl;
@@ -120,6 +121,8 @@ class Cache {
                     //cout << "about to load a value" << endl;
                     load_value(index, tag);
                     //cout << "returned";
+                } else if {
+                    
                 }
                 
 
