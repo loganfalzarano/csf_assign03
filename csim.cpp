@@ -9,20 +9,20 @@ using namespace std;
 
 //TODO: should we name this a Block
 class Slot {
-    u_int32_t tag; //we want this to be a binary value
-    bool is_valid;
-    bool is_dirty;
-    unsigned access_ts;
-    unsigned load_ts;
-
     public:
+        u_int32_t tag; //we want this to be a binary value
+        bool is_valid;
+        bool is_dirty;
+        u_int32_t access_ts;
+        u_int32_t load_ts;
+
         //constructor for creating a slot
-        Slot(u_int32_t tag, bool dirty_bit) {
+        Slot(u_int32_t tag, bool is_dirty, u_int32_t access_ts, u_int32_t load_ts) {
             this->tag = tag;
             this->is_dirty = is_dirty;
         }
 
-        //getter methods
+        //getter methods (TODO: Delete)
         u_int32_t get_tag() {
             return this->tag;
         }
@@ -35,6 +35,7 @@ class Slot {
 class Set {
     public:
         vector<Slot> slots;
+
 };
 
 class Cache {
@@ -99,67 +100,130 @@ class Cache {
             //TODO determine if we need to deal with invalid trace files
             string input_line;
             while(getline(cin, input_line)) {
-                cout << input_line << endl;
                 string read_or_write = input_line.substr(0, 1);
                 string string_memory_address = input_line.substr(4, 8); //we don't really care about the offset, though
-                //cout << "memory address is:|" << string_memory_address << "|\n";
                 u_int32_t memory_address = stoul(string_memory_address, 0, 16);
-                //cout << "real memory address is:|" << memory_address << "|\n";
-
-                //u_int32_t tag = memory_address & (((1UL << tag_bits) - 1) << (32 - tag_bits));
-                //u_int32_t index = memory_address & (((1UL << index_bits) - 1) << offset_bits);
+                
                 u_int32_t tag = memory_address >> (32 - tag_bits);
                 //TODO: Make this more simple
                 u_int32_t index = (memory_address & (((1UL << index_bits) - 1) << offset_bits)) >> offset_bits;
 
-                //cout << "tag is: " << tag << endl;
-                //cout << "index is: " << index << endl;
-
-                cout << input_line << endl;
+                // cout << "tag is: " << tag << endl;
+                // cout << "index is: " << index << endl;
+                // cout << input_line << endl;
+                // cout << endl;
 
                 if(read_or_write.compare("l") == 0) {
                     //cout << "about to load a value" << endl;
                     load_value(index, tag);
                     //cout << "returned";
-                } else if {
-                    
+                } else if (read_or_write.compare("s") == 0) {
+                    store_value(index, tag);
                 }
-                
+            }
+        }
 
-                //1110 0000 cout << "r/w is:|" << read_or_write<< "|\n";
-                
-                
+        //returns index of the hit if we can find it and -1 otherwise
+        int find(Set set, u_int32_t tag) {
+            //cout << "searching for a hit" << set.slots.size() << endl;
+            for (int i=0; i< set.slots.size(); i++) {
+                if (set.slots[i].tag == tag) {
+                    return i; //we found the given tag
+                }
+            }
+            return -1; //if we can't find the tag we have missed
+        }
+
+        int find_index_to_evict(Set set) {
+            int index_to_evict = 0;
+            
+            for (int i=0; i<set.slots.size(); i++) {
+                if (eviction_type.compare("lru")) { // for lru find the least recently accessed
+                    if (set.slots[i].access_ts < set.slots[index_to_evict].access_ts) {
+                        index_to_evict = i;
+                    }
+                } else if (eviction_type.compare("fifo")) { // for fifo find lowest load ts
+                    if (set.slots[i].load_ts < set.slots[index_to_evict].load_ts) {
+                        index_to_evict = i;
+                    }
+                }
+            }
+
+            return index_to_evict;
+        }
+
+        void add_to_set(u_int32_t index, Slot new_slot) {
+             if (cache[index].slots.size() == blocks_in_set) { //if the set is full, we have to evict
+                int index_to_evict = find_index_to_evict(cache[index]);
+
+                // if we are in write-back mode and what we are about to evict is dirty we write that to main memory first
+                if (write_type.compare("write-back") && cache[index].slots[index_to_evict].is_dirty) { 
+                    total_cycles += (100 * (bytes_in_block / 4));
+                }
+                //cout << "ABout to place a slot at index" << index_to_evict << endl;
+                cache[index].slots[index_to_evict] = new_slot;
+            } else { //no eviction needed, add it to the set
+                //cout << "ABout to place a slot at the end" << endl;
+                cache[index].slots.push_back(new_slot);
+                //cout << cache[index].slots.size() << endl;
+                total_cycles++;
             }
         }
 
         void load_value(u_int32_t index, u_int32_t tag) {
             total_loads++;
-            cout << "|" << total_loads << "|" << endl;
+            //cout << "|" << total_loads << "|" << endl;
             Set set_accessed = cache[index];
-            if (set_accessed.slots.empty()) {
-                //cout << "this was a load miss\n\n" << endl;
+            int hit = find(set_accessed, tag);
+            if (hit == -1) { //load miss
+                Slot new_slot = Slot(tag, false, total_cycles, total_cycles); //slot is not different from memory so dirty_bit is false
                 load_misses++;
-                //cout << "bytes in block is:" << bytes_in_block;
-                total_cycles += (100 * (bytes_in_block / 4));
-                Slot new_slot = Slot(tag, true);
-                cache[index].slots.push_back(new_slot);
-            } else {
-                //cout << "this was a load hit\n\n";
+                //if have a miss we need to the new slot to the set in the cache
+                add_to_set(index, new_slot);
+                //cout << cache[index].slots.size() << "<- Number of things in slot" << endl;
+                //load from memory since we missed
+                total_cycles += (100 * (bytes_in_block / 4)); 
+            } else { //load hit
+                cache[index].slots[hit].access_ts = total_cycles; //update access ts
                 load_hits++;
                 total_cycles++;
             }
-            
-            
+        }
+
+        void store_value(u_int32_t index, u_int32_t tag) {
+            total_stores++;
+            Set set_accessed = cache[index];
+            int hit = find(set_accessed, tag);
+            //store miss
+            if (hit == -1) {
+                store_misses++;
+                if (allocate_type.compare("no-write-allocate") == 0) {
+                    total_cycles += (100 * (bytes_in_block / 4)); //write straight to memory, no write to cache
+                } else if (allocate_type.compare("write-allocate") == 0) {
+                    Slot new_slot = Slot(tag, true, total_cycles, total_cycles);
+                    add_to_set(index, new_slot);
+                }
+            } else { //store hit
+                store_hits++;
+                if (write_type.compare("write-through") == 0) {
+                    total_cycles += (100 * (bytes_in_block / 4));
+                } else if (write_type.compare("write-back")) {
+                    //write to Cache and mark it as dirty
+                    Slot new_slot = Slot(tag, true, total_cycles, total_cycles);
+                    //cache[index].slots.push_back(new_slot);
+                    add_to_set(index, new_slot);
+                }
+            }
         }
 
         void display_stats() {
-            cout << total_loads << endl;
-            cout << total_stores << endl;
-            cout << load_hits << endl;
-            cout << load_misses << endl;
-            cout << store_hits << endl;
-            cout << store_misses << endl;
-            cout << total_cycles << endl;
+            cout << "Total loads: " << total_loads << endl;
+            cout << "Total stores: " << total_stores << endl;
+            cout << "Load hits: " << load_hits << endl;
+            cout << "Load misses: " << load_misses << endl;
+            cout << "Store hits: " << store_hits << endl;
+            cout << "Store misses: " << store_misses << endl;
+            cout << "Total cycles: " << total_cycles << endl;
         }
 };
 
@@ -184,7 +248,7 @@ bool check_command_line_args(u_int32_t* sets_in_cache, u_int32_t* blocks_in_set,
         return false;
     }
 
-    //old cold
+    //old code
     /* if (allocate_type.compare("no-write-allocate") && write_type.compare("write-back")) {
         std::cerr << "combine no-write-allocate with write-back.\n";
         return false;
