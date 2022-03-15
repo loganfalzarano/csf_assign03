@@ -20,15 +20,8 @@ class Slot {
         Slot(u_int32_t tag, bool is_dirty, u_int32_t access_ts, u_int32_t load_ts) {
             this->tag = tag;
             this->is_dirty = is_dirty;
-        }
-
-        //getter methods (TODO: Delete)
-        u_int32_t get_tag() {
-            return this->tag;
-        }
-
-        bool get_dirty_bit() {
-            return this->is_dirty;
+            this->access_ts = access_ts;
+            this-> load_ts = load_ts;
         }
 };
 
@@ -123,7 +116,7 @@ class Cache {
             }
         }
 
-        //returns index of the hit if we can find it and -1 otherwise
+        //returns index of the hit in the set if we can find it and -1 otherwise
         int find(Set set, u_int32_t tag) {
             //cout << "searching for a hit" << set.slots.size() << endl;
             for (int i=0; i< set.slots.size(); i++) {
@@ -160,10 +153,10 @@ class Cache {
                 if (write_type.compare("write-back") && cache[index].slots[index_to_evict].is_dirty) { 
                     total_cycles += (100 * (bytes_in_block / 4));
                 }
-                //cout << "ABout to place a slot at index" << index_to_evict << endl;
+                //cout << "About to place a slot at index" << index_to_evict << endl;
                 cache[index].slots[index_to_evict] = new_slot;
             } else { //no eviction needed, add it to the set
-                //cout << "ABout to place a slot at the end" << endl;
+                //cout << "About to place a slot at the end" << endl;
                 cache[index].slots.push_back(new_slot);
                 //cout << cache[index].slots.size() << endl;
                 total_cycles++;
@@ -198,7 +191,7 @@ class Cache {
             if (hit == -1) {
                 store_misses++;
                 if (allocate_type.compare("no-write-allocate") == 0) {
-                    total_cycles += (100 * (bytes_in_block / 4)); //write straight to memory, no write to cache
+                    total_cycles += 100; //write straight to memory, no write to cache
                 } else if (allocate_type.compare("write-allocate") == 0) {
                     Slot new_slot = Slot(tag, true, total_cycles, total_cycles);
                     add_to_set(index, new_slot);
@@ -206,7 +199,7 @@ class Cache {
             } else { //store hit
                 store_hits++;
                 if (write_type.compare("write-through") == 0) {
-                    total_cycles += (100 * (bytes_in_block / 4));
+                    total_cycles += 100
                 } else if (write_type.compare("write-back")) {
                     //write to Cache and mark it as dirty
                     Slot new_slot = Slot(tag, true, total_cycles, total_cycles);
