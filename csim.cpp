@@ -67,9 +67,9 @@ class Cache {
             offset_bits = bitshift_log_base2(bytes_in_block);
             index_bits = bitshift_log_base2(sets_in_cache);
             tag_bits = 32 - index_bits - offset_bits;
-            // cout << "Offset bits:" << offset_bits << endl;
-            // cout << "Index bits:" << index_bits << endl;
-            // cout << "Tag bits:" << tag_bits << endl;
+            cout << "Offset bits:" << offset_bits << endl;
+            cout << "Index bits:" << index_bits << endl;
+            cout << "Tag bits:" << tag_bits << endl;
 
             //TODO: Instantiate vector<Set>
             for(int i = 0; i < sets_in_cache; i++) {
@@ -101,18 +101,20 @@ class Cache {
                 //TODO: Make this more simple
                 u_int32_t index = (memory_address & (((1UL << index_bits) - 1) << offset_bits)) >> offset_bits;
 
-                // cout << "tag is: " << tag << endl;
-                // cout << "index is: " << index << endl;
+                cout << "tag is: " << tag << endl;
+                cout << "index is: " << index << endl;
                 // cout << input_line << endl;
                 // cout << endl;
 
                 if(read_or_write.compare("l") == 0) {
-                    //cout << "about to load a value" << endl;
+                    cout << "about to load a value" << endl;
                     load_value(index, tag);
                     //cout << "returned";
                 } else if (read_or_write.compare("s") == 0) {
+                    cout << "about to load a value" << endl;
                     store_value(index, tag);
                 }
+                cout << endl;
             }
         }
 
@@ -169,15 +171,17 @@ class Cache {
             Set set_accessed = cache[index];
             int hit = find(set_accessed, tag);
             if (hit == -1) { //load miss
+                cout << "it was a load miss" << endl;
                 Slot new_slot = Slot(tag, false, total_cycles, total_cycles); //slot is not different from memory so dirty_bit is false
                 load_misses++;
-                //if have a miss we need to the new slot to the set in the cache
+                //if have a miss we need to add the new slot to the set in the cache
                 add_to_set(index, new_slot);
                 //cout << cache[index].slots.size() << "<- Number of things in slot" << endl;
                 //load from memory since we missed
                 total_cycles += (100 * (bytes_in_block / 4)); 
             } else { //load hit
-                cache[index].slots[hit].access_ts = total_cycles; //update access ts
+                cout << "it was a load hit" << endl;
+                cache[index].slots[hit].access_ts++; //update access ts
                 load_hits++;
                 total_cycles++;
             }
@@ -189,22 +193,27 @@ class Cache {
             int hit = find(set_accessed, tag);
             //store miss
             if (hit == -1) {
+                cout << "it was a store miss" << endl;
                 store_misses++;
                 if (allocate_type.compare("no-write-allocate") == 0) {
                     total_cycles += 100; //write straight to memory, no write to cache
                 } else if (allocate_type.compare("write-allocate") == 0) {
-                    Slot new_slot = Slot(tag, true, total_cycles, total_cycles);
+                    Slot new_slot = Slot(tag, true, 0, 0);
                     add_to_set(index, new_slot);
                 }
             } else { //store hit
+                cout << "it was a store hit" << endl;
                 store_hits++;
                 if (write_type.compare("write-through") == 0) {
-                    total_cycles += 100
-                } else if (write_type.compare("write-back")) {
+                    cache[index].slots[hit].access_ts++; //update access ts
+                    total_cycles += 100;
+                } else if (write_type.compare("write-back") == 0) {
                     //write to Cache and mark it as dirty
-                    Slot new_slot = Slot(tag, true, total_cycles, total_cycles);
+                    Slot new_slot = Slot(tag, true, 0, 0);
+                    cache[index].slots[hit] = new_slot;
+                    total_cycles++;
                     //cache[index].slots.push_back(new_slot);
-                    add_to_set(index, new_slot);
+                    //add_to_set(index, new_slot);
                 }
             }
         }
