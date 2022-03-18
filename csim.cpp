@@ -181,7 +181,8 @@ class Cache {
                 add_to_set(index, new_slot);
                 //cout << cache[index].slots.size() << "<- Number of things in slot" << endl;
                 //load from memory since we missed
-                total_cycles += (100 * (bytes_in_block / 4)); 
+                total_cycles += (100 * (bytes_in_block / 4));
+                total_cycles++; //for adding to the cache 
             } else { //load hit
                 //cout << "it was a load hit" << endl;
                 cache[index].slots[hit].access_ts = total_cycles; //update access ts
@@ -195,6 +196,10 @@ class Cache {
             Set set_accessed = cache[index];
             int hit = find(set_accessed, tag);
             //store miss
+// miss - load into cache           
+// call store as if it were a hit
+//
+//
             if (hit == -1) {
                 //cout << "it was a store miss" << endl;
                 store_misses++;
@@ -205,20 +210,24 @@ class Cache {
                     add_to_set(index, new_slot);
                     total_cycles++; //writing a dirty block to cache so we increment total cycles
                 }
-            } else { //store hit
-                //cout << "it was a store hit" << endl;
+            } else {
                 store_hits++;
-                if (write_type.compare("write-through") == 0) {
-                    cache[index].slots[hit].access_ts = total_cycles; //update access ts
-                    total_cycles += 100;
-                } else if (write_type.compare("write-back") == 0) {
-                    //write to Cache and mark it as dirty
-                    Slot new_slot = Slot(tag, true, total_cycles, total_cycles);
-                    cache[index].slots[hit] = new_slot;
-                    total_cycles++;
-                    //cache[index].slots.push_back(new_slot);
-                    //add_to_set(index, new_slot);
-                }
+            }
+                //store hit (unwrap this else block)
+                //cout << "it was a store hit" << endl;
+            
+            if (write_type.compare("write-through") == 0) {
+                cache[index].slots[hit].access_ts = total_cycles; //update access ts
+                total_cycles += 100;
+            } else if (write_type.compare("write-back") == 0) {
+                //write to Cache and mark it as dirty
+                Slot new_slot = Slot(tag, true, total_cycles, total_cycles);
+                cache[index].slots[hit] = new_slot;
+                total_cycles++;
+                //cache[index].slots.push_back(new_slot);
+                //add_to_set(index, new_slot);
+            }
+            
             }
         }
 
