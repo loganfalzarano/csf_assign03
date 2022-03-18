@@ -273,11 +273,12 @@ bool check_command_line_args(u_int32_t* sets_in_cache, u_int32_t* blocks_in_set,
     bool c4 = allocate_type->compare("write-allocate")==0 || allocate_type->compare("no-write-allocate")==0;
     bool c5 = (write_type->compare("write-through")==0 || write_type->compare("write-back")==0);
     bool c6 = (eviction_type->compare("lru")==0 || eviction_type->compare("fifo")==0);
-    bool c7 = !(allocate_type->compare("no-write-allocate") && write_type->compare("write-back"));
+    bool c7 = !((allocate_type->compare("no-write-allocate")==0) && (write_type->compare("write-back")==0));
 
     if (c1 && c2 && c3 && c4 && c5 && c6 & c7) {
         return true;
     }
+
     //TODO: give user more feedback on how to give command line args
     cout << "Invalid command line arguments.\n";
     return false;
