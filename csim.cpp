@@ -155,7 +155,7 @@ class Cache {
                 if (write_type.compare("write-back") && cache[index].slots[index_to_evict].is_dirty) { 
                     total_cycles += (100 * (bytes_in_block / 4));
                 }
-                //cout << "About to place a slot at index" << index_to_evict << endl;
+                cout << "Evicting" << cache[index].slots[index_to_evict].tag;
                 cache[index].slots[index_to_evict] = new_slot;
             } else { //no eviction needed, add it to the set
                 //cout << "About to place a slot at the end" << endl;
