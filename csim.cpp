@@ -67,9 +67,9 @@ class Cache {
             offset_bits = bitshift_log_base2(bytes_in_block);
             index_bits = bitshift_log_base2(sets_in_cache);
             tag_bits = 32 - index_bits - offset_bits;
-            cout << "Offset bits:" << offset_bits << endl;
-            cout << "Index bits:" << index_bits << endl;
-            cout << "Tag bits:" << tag_bits << endl;
+            //cout << "Offset bits:" << offset_bits << endl;
+            //cout << "Index bits:" << index_bits << endl;
+            //cout << "Tag bits:" << tag_bits << endl;
 
             //TODO: Instantiate vector<Set>
             for(int i = 0; i < sets_in_cache; i++) {
@@ -101,17 +101,17 @@ class Cache {
                 //TODO: Make this more simple
                 u_int32_t index = (memory_address & (((1UL << index_bits) - 1) << offset_bits)) >> offset_bits;
 
-                cout << "tag is: " << tag << endl;
-                cout << "index is: " << index << endl;
-                // cout << input_line << endl;
+                //cout << "tag is: " << tag << endl;
+                //cout << "index is: " << index << endl;
+                //cout << input_line << endl;
                 // cout << endl;
 
                 if(read_or_write.compare("l") == 0) {
-                    cout << "about to load a value" << endl;
+                    //cout << "about to load a value" << endl;
                     load_value(index, tag);
                     //cout << "returned";
                 } else if (read_or_write.compare("s") == 0) {
-                    cout << "about to load a value" << endl;
+                    //cout << "about to load a value" << endl;
                     store_value(index, tag);
                 }
                 cout << endl;
@@ -131,13 +131,16 @@ class Cache {
 
         int find_index_to_evict(Set set) {
             int index_to_evict = 0;
-            
+            //cout << "entered eviction function" << endl;
             for (int i=0; i<set.slots.size(); i++) {
-                if (eviction_type.compare("lru")) { // for lru find the least recently accessed
+                
+                if (eviction_type.compare("lru") == 0) { // for lru find the least recently accessed
+                    //cout << "got here" << endl;
+                    cout << set.slots[i].access_ts << " < " << set.slots[index_to_evict].access_ts << endl;
                     if (set.slots[i].access_ts < set.slots[index_to_evict].access_ts) {
                         index_to_evict = i;
                     }
-                } else if (eviction_type.compare("fifo")) { // for fifo find lowest load ts
+                } else if (eviction_type.compare("fifo") == 0) { // for fifo find lowest load ts
                     if (set.slots[i].load_ts < set.slots[index_to_evict].load_ts) {
                         index_to_evict = i;
                     }
@@ -155,13 +158,13 @@ class Cache {
                 if (write_type.compare("write-back") && cache[index].slots[index_to_evict].is_dirty) { 
                     total_cycles += (100 * (bytes_in_block / 4));
                 }
-                cout << "Evicting" << cache[index].slots[index_to_evict].tag;
+                //cout << "Evicting tag:" << cache[index].slots[index_to_evict].tag << " index " << index;
                 cache[index].slots[index_to_evict] = new_slot;
             } else { //no eviction needed, add it to the set
                 //cout << "About to place a slot at the end" << endl;
                 cache[index].slots.push_back(new_slot);
                 //cout << cache[index].slots.size() << endl;
-                total_cycles++;
+                //total_cycles++;
             }
         }
 
@@ -171,7 +174,7 @@ class Cache {
             Set set_accessed = cache[index];
             int hit = find(set_accessed, tag);
             if (hit == -1) { //load miss
-                cout << "it was a load miss" << endl;
+                //cout << "it was a load miss" << endl;
                 Slot new_slot = Slot(tag, false, total_cycles, total_cycles); //slot is not different from memory so dirty_bit is false
                 load_misses++;
                 //if have a miss we need to add the new slot to the set in the cache
@@ -180,8 +183,8 @@ class Cache {
                 //load from memory since we missed
                 total_cycles += (100 * (bytes_in_block / 4)); 
             } else { //load hit
-                cout << "it was a load hit" << endl;
-                cache[index].slots[hit].access_ts++; //update access ts
+                //cout << "it was a load hit" << endl;
+                cache[index].slots[hit].access_ts = total_cycles; //update access ts
                 load_hits++;
                 total_cycles++;
             }
@@ -193,23 +196,24 @@ class Cache {
             int hit = find(set_accessed, tag);
             //store miss
             if (hit == -1) {
-                cout << "it was a store miss" << endl;
+                //cout << "it was a store miss" << endl;
                 store_misses++;
                 if (allocate_type.compare("no-write-allocate") == 0) {
                     total_cycles += 100; //write straight to memory, no write to cache
                 } else if (allocate_type.compare("write-allocate") == 0) {
-                    Slot new_slot = Slot(tag, true, 0, 0);
+                    Slot new_slot = Slot(tag, true, total_cycles, total_cycles);
                     add_to_set(index, new_slot);
+                    total_cycles++; //writing a dirty block to cache so we increment total cycles
                 }
             } else { //store hit
-                cout << "it was a store hit" << endl;
+                //cout << "it was a store hit" << endl;
                 store_hits++;
                 if (write_type.compare("write-through") == 0) {
-                    cache[index].slots[hit].access_ts++; //update access ts
+                    cache[index].slots[hit].access_ts = total_cycles; //update access ts
                     total_cycles += 100;
                 } else if (write_type.compare("write-back") == 0) {
                     //write to Cache and mark it as dirty
-                    Slot new_slot = Slot(tag, true, 0, 0);
+                    Slot new_slot = Slot(tag, true, total_cycles, total_cycles);
                     cache[index].slots[hit] = new_slot;
                     total_cycles++;
                     //cache[index].slots.push_back(new_slot);
@@ -246,7 +250,7 @@ int is_power_of_two(int n) {
 //returns true if there are enough command line arguments and they are all valid
 bool check_command_line_args(u_int32_t* sets_in_cache, u_int32_t* blocks_in_set, u_int32_t* bytes_in_block, string* allocate_type, string* write_type, string* eviction_type, u_int32_t argc, char** argv) {
     if (argc != 7) {
-        cout << "Too many or too few command line arguments (there must be exactly 7).\n"; // should pru_int32_t to stderr i think
+        std::cerr << "Too many or too few command line arguments (there must be exactly 7).\n"; // should pru_int32_t to stderr i think
         return false;
     }
 
@@ -280,7 +284,7 @@ bool check_command_line_args(u_int32_t* sets_in_cache, u_int32_t* blocks_in_set,
     }
 
     //TODO: give user more feedback on how to give command line args
-    cout << "Invalid command line arguments.\n";
+    std::cerr << "Invalid command line arguments.\n";
     return false;
 
 }
