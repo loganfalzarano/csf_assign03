@@ -114,7 +114,7 @@ class Cache {
                     //cout << "about to load a value" << endl;
                     store_value(index, tag);
                 }
-                cout << endl;
+                //cout << endl; FOR SUBMISSION
             }
         }
 
@@ -136,7 +136,7 @@ class Cache {
                 
                 if (eviction_type.compare("lru") == 0) { // for lru find the least recently accessed
                     //cout << "got here" << endl;
-                    cout << set.slots[i].access_ts << " < " << set.slots[index_to_evict].access_ts << endl;
+                    // cout << set.slots[i].access_ts << " < " << set.slots[index_to_evict].access_ts << endl; FOR SUBMISSION
                     if (set.slots[i].access_ts < set.slots[index_to_evict].access_ts) {
                         index_to_evict = i;
                     }
@@ -196,38 +196,34 @@ class Cache {
             Set set_accessed = cache[index];
             int hit = find(set_accessed, tag);
             //store miss
-// miss - load into cache           
-// call store as if it were a hit
-//
-//
+
             if (hit == -1) {
-                //cout << "it was a store miss" << endl;
+                //if we miss we need to get the block from memory according to the allocate policy
                 store_misses++;
                 if (allocate_type.compare("no-write-allocate") == 0) {
                     total_cycles += 100; //write straight to memory, no write to cache
                 } else if (allocate_type.compare("write-allocate") == 0) {
                     Slot new_slot = Slot(tag, true, total_cycles, total_cycles);
                     add_to_set(index, new_slot);
-                    total_cycles++; //writing a dirty block to cache so we increment total cycles
+                    total_cycles += (100 * (bytes_in_block / 4)); //load the block from main into the cache
                 }
             } else {
                 store_hits++;
             }
-                //store hit (unwrap this else block)
-                //cout << "it was a store hit" << endl;
+            // once we have loaded the block accordingly, then we proceed with writing
             
+            // in write-through mode, we write the block straight to main memory, regardless of whether we just loaded it into the cache
             if (write_type.compare("write-through") == 0) {
-                cache[index].slots[hit].access_ts = total_cycles; //update access ts
+                cache[index].slots[hit].access_ts = total_cycles; //don't think we need this
                 total_cycles += 100;
+            //in write-back mode
             } else if (write_type.compare("write-back") == 0) {
                 //write to Cache and mark it as dirty
-                Slot new_slot = Slot(tag, true, total_cycles, total_cycles);
-                cache[index].slots[hit] = new_slot;
+                Slot new_slot = Slot(tag, true, total_cycles, total_cycles); //these two lines feel repeated from within write-allocate
+                add_to_set(index, new_slot); //I think we might be able to get rid of them because write allocate takes care of writing to the cache
                 total_cycles++;
                 //cache[index].slots.push_back(new_slot);
                 //add_to_set(index, new_slot);
-            }
-            
             }
         }
 
