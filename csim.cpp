@@ -190,7 +190,6 @@ class Cache {
                 total_cycles += (100 * (bytes_in_block / 4)); 
             }
 
-
         }
 
         /* void store_value(u_int32_t index, u_int32_t tag) {
@@ -243,7 +242,8 @@ class Cache {
                 if (write_type.compare("write-through") == 0) {
                     total_cycles += 100;
                 } else if (write_type.compare("write-back") == 0) {
-                    cache[index].slots[hit].is_dirty = 1; //if we hit and are writing through, the block could be different
+                    Slot new_slot = Slot(tag, true, total_cycles, total_cycles); //slot is not different from memory so dirty_bit is false
+                    add_to_set(index, new_slot);
                 }
             } else {
                 store_misses++;
