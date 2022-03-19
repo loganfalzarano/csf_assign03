@@ -210,8 +210,8 @@ class Cache {
                 store_hits++;
             }
             // once we have loaded the block accordingly, then we proceed with writing
-            
-            // in write-through mode, we write the block straight to main memory, regardless of whether we just loaded it into the cache
+
+            // in write-through mode, we write the` block straight to main memory, regardless of whether we just loaded it into the cache
             if (write_type.compare("write-through") == 0) {
                 if (hit != -1) {
                     cache[index].slots[hit].access_ts++; //don't think we need this
