@@ -90,7 +90,7 @@ class Cache {
 
         //method to give a trace on a give input file
         void begin_trace() {
-            //TODO determine if we need to deal with invalid trace files
+            //TODO determine if we need to deal with invalid trace files -- we don't
             string input_line;
             while(getline(cin, input_line)) {
                 string read_or_write = input_line.substr(0, 1);
