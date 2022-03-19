@@ -90,7 +90,7 @@ class Cache {
 
         //method to give a trace on a give input file
         void begin_trace() {
-            //TODO determine if we need to deal with invalid trace files -- we don't
+            //TODO determine if we need to deal with invalid trace files
             string input_line;
             while(getline(cin, input_line)) {
                 string read_or_write = input_line.substr(0, 1);
@@ -114,7 +114,7 @@ class Cache {
                     //cout << "about to load a value" << endl;
                     store_value(index, tag);
                 }
-                //cout << endl; FOR SUBMISSION
+                //cout << endl;
             }
         }
 
@@ -136,7 +136,7 @@ class Cache {
                 
                 if (eviction_type.compare("lru") == 0) { // for lru find the least recently accessed
                     //cout << "got here" << endl;
-                    // cout << set.slots[i].access_ts << " < " << set.slots[index_to_evict].access_ts << endl; FOR SUBMISSION
+                    //cout << set.slots[i].access_ts << " < " << set.slots[index_to_evict].access_ts << endl;
                     if (set.slots[i].access_ts < set.slots[index_to_evict].access_ts) {
                         index_to_evict = i;
                     }
@@ -175,17 +175,16 @@ class Cache {
             int hit = find(set_accessed, tag);
             if (hit == -1) { //load miss
                 //cout << "it was a load miss" << endl;
-                Slot new_slot = Slot(tag, false, total_cycles, total_cycles); //slot is not different from memory so dirty_bit is false
+                Slot new_slot = Slot(tag, false, 0, 0); //slot is not different from memory so dirty_bit is false
                 load_misses++;
                 //if have a miss we need to add the new slot to the set in the cache
                 add_to_set(index, new_slot);
                 //cout << cache[index].slots.size() << "<- Number of things in slot" << endl;
                 //load from memory since we missed
-                total_cycles += (100 * (bytes_in_block / 4));
-                total_cycles++; //for adding to the cache 
+                total_cycles += (100 * (bytes_in_block / 4)); 
             } else { //load hit
                 //cout << "it was a load hit" << endl;
-                cache[index].slots[hit].access_ts = total_cycles; //update access ts
+                cache[index].slots[hit].access_ts++; //update access ts
                 load_hits++;
                 total_cycles++;
             }
@@ -203,7 +202,7 @@ class Cache {
                 if (allocate_type.compare("no-write-allocate") == 0) {
                     total_cycles += 100; //write straight to memory, no write to cache
                 } else if (allocate_type.compare("write-allocate") == 0) {
-                    Slot new_slot = Slot(tag, true, total_cycles, total_cycles);
+                    Slot new_slot = Slot(tag, true, 0, 0);
                     add_to_set(index, new_slot);
                     total_cycles += (100 * (bytes_in_block / 4)); //load the block from main into the cache
                 }
@@ -214,12 +213,14 @@ class Cache {
             
             // in write-through mode, we write the block straight to main memory, regardless of whether we just loaded it into the cache
             if (write_type.compare("write-through") == 0) {
-                cache[index].slots[hit].access_ts = total_cycles; //don't think we need this
+                if (hit != -1) {
+                    cache[index].slots[hit].access_ts++; //don't think we need this
+                }
                 total_cycles += 100;
             //in write-back mode
             } else if (write_type.compare("write-back") == 0) {
                 //write to Cache and mark it as dirty
-                Slot new_slot = Slot(tag, true, total_cycles, total_cycles); //these two lines feel repeated from within write-allocate
+                Slot new_slot = Slot(tag, true, 0, 0); //these two lines feel repeated from within write-allocate
                 add_to_set(index, new_slot); //I think we might be able to get rid of them because write allocate takes care of writing to the cache
                 total_cycles++;
                 //cache[index].slots.push_back(new_slot);
