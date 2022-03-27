@@ -156,7 +156,7 @@ class Cache {
 
                 // if we are in write-back mode and what we are about to evict is dirty we write that to main memory first
                 if (write_type.compare("write-back") && cache[index].slots[index_to_evict].is_dirty) { 
-                    total_cycles += (100 * (bytes_in_block / 4));
+                    total_cycles += 100 * bytes_in_block / 4;
                 }
                 //cout << "Evicting tag:" << cache[index].slots[index_to_evict].tag << " index " << index;
                 cache[index].slots[index_to_evict] = new_slot;
@@ -164,8 +164,8 @@ class Cache {
                 //cout << "About to place a slot at the end" << endl;
                 cache[index].slots.push_back(new_slot);
                 //cout << cache[index].slots.size() << endl;
-                total_cycles++;
             }
+            total_cycles++; //adding to a set in the cache takes one cycle
         }
 
         void load_value(u_int32_t index, u_int32_t tag) {
@@ -181,13 +181,14 @@ class Cache {
                 //cout << "it was a load miss" << endl;
                 
             } else { //load miss
-                Slot new_slot = Slot(tag, false, total_cycles, total_cycles); //slot is not different from memory so dirty_bit is false
                 load_misses++;
+                total_cycles += (100 * (bytes_in_block / 4)); //get the cache block from main memory
+                Slot new_slot = Slot(tag, false, total_cycles, total_cycles); //slot is not different from memory so dirty_bit is false
                 //if have a miss we need to add the new slot to the set in the cache
                 add_to_set(index, new_slot);
                 //cout << cache[index].slots.size() << "<- Number of things in slot" << endl;
                 //load from memory since we missed
-                total_cycles += (100 * (bytes_in_block / 4)); 
+                
             }
 
         }
@@ -240,24 +241,30 @@ class Cache {
             if (hit != -1) {
                 store_hits++;
                 if (write_type.compare("write-through") == 0) {
+                    cache[index].slots[hit].access_ts = total_cycles; //can take out of if
                     total_cycles += 100;
                 } else if (write_type.compare("write-back") == 0) {
-                    Slot new_slot = Slot(tag, true, total_cycles, total_cycles); //slot is not different from memory so dirty_bit is false
-                    add_to_set(index, new_slot);
+                    cache[index].slots[hit].is_dirty = true;
+                    cache[index].slots[hit].access_ts = total_cycles; //can take out of if
+                    //no eviciotn needed since we hit
+                    // Slot new_slot = Slot(tag, true, total_cycles, total_cycles); //slot is not different from memory so dirty_bit is false
+                    // add_to_set(index, new_slot);
                 }
+                total_cycles++; //write to cache takes 1 cycle
             } else {
                 store_misses++;
                 if (write_type.compare("write-through") == 0 && allocate_type.compare("no-write-allocate") == 0) {
+                    // nothing gets written to the cache
                     total_cycles += 100;
                 } else if (write_type.compare("write-through") == 0 && allocate_type.compare("write-allocate") == 0) {
-                    Slot new_slot = Slot(tag, false, total_cycles, total_cycles); //slot is not different from memory so dirty_bit is false
-                    add_to_set(index, new_slot);
                     total_cycles += 100 * bytes_in_block / 4;
                     total_cycles += 100;
-                } else if (write_type.compare("write-back") == 0 && allocate_type.compare("write-allocate") == 0) {
-                    Slot new_slot = Slot(tag, true, total_cycles, total_cycles); //slot is not different from memory so dirty_bit is false
+                    Slot new_slot = Slot(tag, false, total_cycles, total_cycles); //slot is not different from memory so dirty_bit is false
                     add_to_set(index, new_slot);
+                } else if (write_type.compare("write-back") == 0 && allocate_type.compare("write-allocate") == 0) {
                     total_cycles += 100 * bytes_in_block / 4;
+                    Slot new_slot = Slot(tag, true, total_cycles, total_cycles); //slot is different from memory so dirty_bit is true
+                    add_to_set(index, new_slot);
                 }
             }
             // once we have loaded the block accordingly, then we proceed with writing
