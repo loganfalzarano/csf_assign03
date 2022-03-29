@@ -357,13 +357,14 @@ int main(int argc, char** argv) {
     if (!check_command_line_args(&sets_in_cache, &blocks_in_set, &bytes_in_block, &allocate_type, &write_type, &eviction_type, argc, argv)) {
         return 1; // Exit with a non-zero exit code
     }
-    
+
     write_allocate = allocate_type.compare("write-allocate");
     no_write_allocate = allocate_type.compare("no-write-allocate");
     write_through = write_type.compare("write-through");
     write_back = write_type.compare("write-back");
-    FIFO = eviction_type.compare("FIFO");
-    LRU = eviction_type.compare("LRU");
+    FIFO = eviction_type.compare("fifo");
+    LRU = eviction_type.compare("lru");
+
 
     //Once command line args are checked, so we can initialize our cache
     Cache cache(sets_in_cache, blocks_in_set, bytes_in_block, write_allocate, no_write_allocate, write_through, write_back, FIFO, LRU);
