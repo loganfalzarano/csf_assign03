@@ -37,9 +37,12 @@ class Cache {
     u_int32_t sets_in_cache;
     u_int32_t blocks_in_set;
     u_int32_t bytes_in_block;
-    string allocate_type;
-    string write_type;
-    string eviction_type;
+    bool write_allocate;
+    bool no_write_allocate;
+    bool write_through;
+    bool write_back;
+    bool FIFO;
+    bool LRU;
     //cache_statistics (all initally 0)
     u_int32_t total_loads = 0;
     u_int32_t total_stores = 0;
@@ -54,14 +57,17 @@ class Cache {
     u_int32_t tag_bits = 0;
     
     public:
-        Cache(u_int32_t sets_in_cache, u_int32_t blocks_in_set, u_int32_t bytes_in_block, string allocate_type, string write_type, string eviction_type) {
+        Cache(u_int32_t sets_in_cache, u_int32_t blocks_in_set, u_int32_t bytes_in_block, bool write_allocate, bool no_write_allocate, bool write_through, bool write_back, bool FIFO, bool LRU) {
             //construct the cache parameters (WE MIGHT NOT NEED THESE HERE)
             this->sets_in_cache = sets_in_cache;
             this->blocks_in_set = blocks_in_set;
             this->bytes_in_block = bytes_in_block;
-            this->allocate_type = allocate_type;
-            this->write_type = write_type;
-            this->eviction_type = eviction_type;
+            this->write_allocate = write_allocate;
+            this->no_write_allocate = no_write_allocate;
+            this->write_through = write_through;
+            this->write_back = write_back;
+            this->FIFO = FIFO;
+            this->LRU = LRU;
 
             //calculate the addressing information
             offset_bits = bitshift_log_base2(bytes_in_block);
@@ -134,13 +140,13 @@ class Cache {
             //cout << "entered eviction function" << endl;
             for (int i=0; i<set.slots.size(); i++) {
                 
-                if (eviction_type.compare("lru") == 0) { // for lru find the least recently accessed
+                if (LRU == true) { // for lru find the least recently accessed
                     //cout << "got here" << endl;
                     //cout << set.slots[i].access_ts << " < " << set.slots[index_to_evict].access_ts << endl;
                     if (set.slots[i].access_ts < set.slots[index_to_evict].access_ts) {
                         index_to_evict = i;
                     }
-                } else if (eviction_type.compare("fifo") == 0) { // for fifo find lowest load ts
+                } else if (FIFO == true) { // for fifo find lowest load ts
                     if (set.slots[i].load_ts < set.slots[index_to_evict].load_ts) {
                         index_to_evict = i;
                     }
@@ -155,7 +161,7 @@ class Cache {
                 int index_to_evict = find_index_to_evict(cache[index]);
 
                 // if we are in write-back mode and what we are about to evict is dirty we write that to main memory first
-                if ((write_type.compare("write-back") == 0) && cache[index].slots[index_to_evict].is_dirty) { 
+                if ((write_back == true) && cache[index].slots[index_to_evict].is_dirty) { 
                     total_cycles += 100 * bytes_in_block / 4;
                 }
                 //cout << "Evicting tag:" << cache[index].slots[index_to_evict].tag << " index " << index;
@@ -240,10 +246,10 @@ class Cache {
             //store hit
             if (hit != -1) {
                 store_hits++;
-                if (write_type.compare("write-through") == 0) {
+                if (write_through == true) {
                     cache[index].slots[hit].access_ts = total_cycles; //can take out of if
                     total_cycles += 100;
-                } else if (write_type.compare("write-back") == 0) {
+                } else if (write_back == true) {
                     cache[index].slots[hit].is_dirty = true;
                     cache[index].slots[hit].access_ts = total_cycles; //can take out of if
                     //no eviciotn needed since we hit
@@ -253,15 +259,15 @@ class Cache {
                 total_cycles++; //write to cache takes 1 cycle
             } else {
                 store_misses++;
-                if (write_type.compare("write-through") == 0 && allocate_type.compare("no-write-allocate") == 0) {
+                if (write_through == true && no_write_allocate == true) {
                     // nothing gets written to the cache
                     total_cycles += 100;
-                } else if (write_type.compare("write-through") == 0 && allocate_type.compare("write-allocate") == 0) {
+                } else if (write_through == true && write_allocate == true) {
                     total_cycles += 100 * bytes_in_block / 4;
                     total_cycles += 100;
                     Slot new_slot = Slot(tag, false, total_cycles, total_cycles); //slot is not different from memory so dirty_bit is false
                     add_to_set(index, new_slot);
-                } else if (write_type.compare("write-back") == 0 && allocate_type.compare("write-allocate") == 0) {
+                } else if (write_back == true && write_allocate == true) {
                     total_cycles += 100 * bytes_in_block / 4;
                     Slot new_slot = Slot(tag, true, total_cycles, total_cycles); //slot is different from memory so dirty_bit is true
                     add_to_set(index, new_slot);
@@ -346,13 +352,21 @@ int main(int argc, char** argv) {
 
     u_int32_t sets_in_cache, blocks_in_set, bytes_in_block;
     string allocate_type, write_type, eviction_type;
+    bool write_allocate, no_write_allocate, write_through, write_back, FIFO, LRU;
 
     if (!check_command_line_args(&sets_in_cache, &blocks_in_set, &bytes_in_block, &allocate_type, &write_type, &eviction_type, argc, argv)) {
         return 1; // Exit with a non-zero exit code
     }
+    
+    write_allocate = allocate_type.compare("write-allocate");
+    no_write_allocate = allocate_type.compare("no-write-allocate");
+    write_through = write_type.compare("write-through");
+    write_back = write_type.compare("write-back");
+    FIFO = eviction_type.compare("FIFO");
+    LRU = eviction_type.compare("LRU");
 
     //Once command line args are checked, so we can initialize our cache
-    Cache cache(sets_in_cache, blocks_in_set, bytes_in_block, allocate_type, write_type, eviction_type);
+    Cache cache(sets_in_cache, blocks_in_set, bytes_in_block, write_allocate, no_write_allocate, write_through, write_back, FIFO, LRU);
     cache.begin_trace();
     cache.display_stats();
   
