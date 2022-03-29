@@ -12,7 +12,8 @@ all : csim
 csim : csim.o
 	$(CC) -o $@ csim.o
 
-csim.o : csim.cpp 
+csim.o : csim.cpp
+	$(CC) $(CFLAGS) -c $*.cpp -o $*.o
 
 clean :
 	rm -f fixedpoint_tests *.o

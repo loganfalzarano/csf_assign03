@@ -119,7 +119,7 @@ class Cache {
         }
 
         //returns index of the hit in the set if we can find it and -1 otherwise
-        int find(Set set, u_int32_t tag) {
+        int find(const Set & set, u_int32_t tag) {
             //cout << "searching for a hit" << set.slots.size() << endl;
             for (int i=0; i< set.slots.size(); i++) {
                 if (set.slots[i].tag == tag) {
@@ -129,7 +129,7 @@ class Cache {
             return -1; //if we can't find the tag we have missed
         }
 
-        int find_index_to_evict(Set set) {
+        int find_index_to_evict(const Set & set) {
             int index_to_evict = 0;
             //cout << "entered eviction function" << endl;
             for (int i=0; i<set.slots.size(); i++) {
@@ -155,7 +155,7 @@ class Cache {
                 int index_to_evict = find_index_to_evict(cache[index]);
 
                 // if we are in write-back mode and what we are about to evict is dirty we write that to main memory first
-                if (write_type.compare("write-back") && cache[index].slots[index_to_evict].is_dirty) { 
+                if ((write_type.compare("write-back") == 0) && cache[index].slots[index_to_evict].is_dirty) { 
                     total_cycles += 100 * bytes_in_block / 4;
                 }
                 //cout << "Evicting tag:" << cache[index].slots[index_to_evict].tag << " index " << index;
