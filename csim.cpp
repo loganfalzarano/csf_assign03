@@ -78,7 +78,7 @@ class Cache {
             // cout << "Tag bits:" << tag_bits << endl;
 
             //TODO: Instantiate vector<Set>
-            for(int i = 0; i < sets_in_cache; i++) {
+            for(u_int32_t i = 0; i < sets_in_cache; i++) {
                 Set new_set;
                 cache.push_back(new_set);
             }
@@ -127,7 +127,7 @@ class Cache {
         //returns index of the hit in the set if we can find it and -1 otherwise
         int find(const Set & set, u_int32_t tag) {
             //cout << "searching for a hit" << set.slots.size() << endl;
-            for (int i=0; i< set.slots.size(); i++) {
+            for (u_int32_t i=0; i< set.slots.size(); i++) {
                 if (set.slots[i].tag == tag) {
                     return i; //we found the given tag
                 }
@@ -138,7 +138,7 @@ class Cache {
         int find_index_to_evict(const Set & set) {
             int index_to_evict = 0;
             //cout << "entered eviction function" << endl;
-            for (int i=0; i<set.slots.size(); i++) {
+            for (u_int32_t i=0; i<set.slots.size(); i++) {
                 
                 if (LRU == true) { // for lru find the least recently accessed
                     //cout << "got here" << endl;
@@ -358,12 +358,12 @@ int main(int argc, char** argv) {
         return 1; // Exit with a non-zero exit code
     }
 
-    write_allocate = allocate_type.compare("write-allocate");
-    no_write_allocate = allocate_type.compare("no-write-allocate");
-    write_through = write_type.compare("write-through");
-    write_back = write_type.compare("write-back");
-    FIFO = eviction_type.compare("fifo");
-    LRU = eviction_type.compare("lru");
+    write_allocate = allocate_type.compare("write-allocate") == 0;
+    no_write_allocate = allocate_type.compare("no-write-allocate") == 0;
+    write_through = write_type.compare("write-through") == 0;
+    write_back = write_type.compare("write-back") == 0;
+    FIFO = eviction_type.compare("fifo") == 0;
+    LRU = eviction_type.compare("lru") == 0;
 
 
     //Once command line args are checked, so we can initialize our cache
