@@ -23,7 +23,7 @@ All of which have a cache capacity of 8192 bytes
 In determining best overall effectiveness we focused on store misses and total cycles. Our statistics show that
 write-allocate consistently has fewer misses than no-write-allocate, and when write allocate is paired with 
 write-back it also consistently has the lowest number of clock cycles. From this we can safely say that write-allocate
-and write-back together have the best overall effectiveness. LRU and fully associaive also appear to result in 
+and write-back together have the best overall effectiveness. LRU and fully associative also appear to result in 
 fewer misses and cycles. Once we chose the write-allocate, write-back, LRU cache, we looked at associativity
 factor. Clock cycles and misses steadily decereased as our associativity increased, so it seems that the most effective 
 cache would be a fully associative, write-allocate, write-back, LRU cache that maximizes the associativity, which in our 
