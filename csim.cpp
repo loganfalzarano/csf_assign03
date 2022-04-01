@@ -7,6 +7,7 @@
 
 using namespace std;
 
+//This class represents a slot in the Cache (a block of memory loaded from main memory)
 class Slot {
     public:
         u_int32_t tag; //we want this to be a binary value
@@ -24,12 +25,14 @@ class Slot {
         }
 };
 
+//This class represents a set in the Cache (A collection of Slots loaded from main memory)
 class Set {
     public:
         vector<Slot> slots;
-
 };
 
+//This class represents the Cache as whole (what mode the cache is in, as well as the sets)
+//and blocks of memory that are currently in the Cache
 class Cache {
     vector<Set> cache;
     u_int32_t sets_in_cache;
@@ -54,6 +57,7 @@ class Cache {
     u_int32_t index_bits = 0;
     u_int32_t tag_bits = 0;
     
+    //constructor for the Cache block, sets the cache modes and intialializes the correct number of sets
     public:
         Cache(u_int32_t sets_in_cache, u_int32_t blocks_in_set, u_int32_t bytes_in_block, bool write_allocate, bool no_write_allocate, bool write_through, bool write_back, bool FIFO, bool LRU) {
             //construct the cache parameters
@@ -78,6 +82,11 @@ class Cache {
             }
         }
 
+        //this method take the log base 2 of a given integer
+        //Parameters:
+        //  n - integer to take the log if
+        //Returns:
+        //  the log base 2 of the integer based in
         int bitshift_log_base2(int n) {
             int res = 0;
             while (n != 1 && n != 0) {
@@ -87,7 +96,11 @@ class Cache {
             return res;
         }
 
-        //method to give a trace on a give input file
+        //this method traces through the input file until all the instructions have been completed
+        //Parameters:
+        //  none
+        //Returns:
+        //  none
         void begin_trace() {
             string input_line;
             while(getline(cin, input_line)) {
@@ -106,7 +119,12 @@ class Cache {
             }
         }
 
-        //returns index of the hit in the set if we can find it and -1 otherwise
+        //Returns index of the hit in the set if we can find it and -1 otherwise
+        //Parameters:
+        //  set - reference to the set we want to search
+        //  tag - the tag of the slot to search for
+        //Returns:
+        //  the index of the slot in the vector of blocks if there is a hit, -1 for a miss
         int find(const Set & set, u_int32_t tag) {
             for (u_int32_t i=0; i< set.slots.size(); i++) {
                 if (set.slots[i].tag == tag) {
@@ -116,6 +134,11 @@ class Cache {
             return -1; //if we can't find the tag we have missed
         }
 
+        //Finds the index of the Slot to evict in the vector of Slots when an evivtion is required
+        //Parameters:
+        //  set - reference to the set we want to search for a slot to evict
+        //Returns:
+        //  the index of the slot to evict from the set
         int find_index_to_evict(const Set & set) {
             int index_to_evict = 0;
             for (u_int32_t i=0; i<set.slots.size(); i++) {
@@ -133,6 +156,12 @@ class Cache {
             return index_to_evict;
         }
 
+        //This method adds a Slot to a Set, performing evictions if needed
+        //Parameters:
+        //  index - the index of the set (used to access the correct set)
+        //  new_slot - the slot to be added to the set
+        //Returns:
+        //  none
         void add_to_set(u_int32_t index, Slot new_slot) {
              if (cache[index].slots.size() == blocks_in_set) { //if the set is full, we have to evict
                 int index_to_evict = find_index_to_evict(cache[index]);
@@ -148,6 +177,12 @@ class Cache {
             total_cycles++; //adding to a set in the cache takes one cycle
         }
 
+        //This method performs a load (executes when "l" is the instruction form the trace)
+        //Parameters:
+        //  index - the index of the set (used to access the correct set)
+        //  tag - the tag of the memory instruction
+        //Returns:
+        //  none
         void load_value(u_int32_t index, u_int32_t tag) {
             total_loads++;
             Set set_accessed = cache[index];
@@ -156,7 +191,6 @@ class Cache {
                 cache[index].slots[hit].access_ts = total_cycles; //update access ts
                 load_hits++;
                 total_cycles++;
-                
             } else { //load miss
                 load_misses++;
                 total_cycles += (100 * (bytes_in_block / 4)); //get the cache block from main memory
@@ -165,9 +199,14 @@ class Cache {
                 add_to_set(index, new_slot);
                 //load from memory since we missed
             }
-
         }
 
+        //This method performs a store (executes when "s" is the instruction form the trace)
+        //Parameters:
+        //  index - the index of the set (used to access the correct set)
+        //  tag - the tag of the memory instruction
+        //Returns:
+        //  none
         void store_value(u_int32_t index, u_int32_t tag) {
             total_stores++;
             Set set_accessed = cache[index];
@@ -176,11 +215,11 @@ class Cache {
             if (hit != -1) {
                 store_hits++;
                 if (write_through == true) {
-                    cache[index].slots[hit].access_ts = total_cycles; //can take out of if
+                    cache[index].slots[hit].access_ts = total_cycles; 
                     total_cycles += 100;
                 } else if (write_back == true) {
                     cache[index].slots[hit].is_dirty = true;
-                    cache[index].slots[hit].access_ts = total_cycles; //can take out of if
+                    cache[index].slots[hit].access_ts = total_cycles; 
                     //no eviciotn needed since we hit
                 }
                 total_cycles++; //write to cache takes 1 cycle
@@ -190,24 +229,23 @@ class Cache {
                     // nothing gets written to the cache
                     total_cycles += 100;
                 } else if (write_through == true && write_allocate == true) {
-                    total_cycles += 100 * bytes_in_block / 4;
-                    total_cycles += 100;
+                    total_cycles += 100 * bytes_in_block / 4; //load the block from main memory
+                    total_cycles += 100; //write 4 byte value through to main memory
                     Slot new_slot = Slot(tag, false, total_cycles, total_cycles); //slot is not different from memory so dirty_bit is false
                     add_to_set(index, new_slot);
                 } else if (write_back == true && write_allocate == true) {
-                    total_cycles += 100 * bytes_in_block / 4;
+                    total_cycles += 100 * bytes_in_block / 4; //load the block from main memory
                     Slot new_slot = Slot(tag, true, total_cycles, total_cycles); //slot is different from memory so dirty_bit is true
                     add_to_set(index, new_slot);
                 }
             }
-            // once we have loaded the block accordingly, then we proceed with writing
-
-            // in write-through mode, we write the` block straight to main memory, regardless of whether we just loaded it into the cache
-            
         }
 
-
-
+        //This methods displays the stats of the Cache after the trace has been performed
+        //Parameters:
+        //  none
+        //Returns:
+        //  none
         void display_stats() {
             cout << "Total loads: " << total_loads << endl;
             cout << "Total stores: " << total_stores << endl;
@@ -219,17 +257,24 @@ class Cache {
         }
 };
 
+//This function determines if a given integer is a power of two.
+//Parameters:
+//  n - positive integer
+//Returns:
+//  true if the integer is a power of 2, false otherwise
 int is_power_of_two(int n) {
     return (n != 0) && ((n & (n - 1)) == 0);
 }
 
 //returns true if there are enough command line arguments and they are all valid
+//prints a message to cerr if the command line arguments are not valid
 bool check_command_line_args(u_int32_t* sets_in_cache, u_int32_t* blocks_in_set, u_int32_t* bytes_in_block, string* allocate_type, string* write_type, string* eviction_type, u_int32_t argc, char** argv) {
     if (argc != 7) {
-        std::cerr << "Too many or too few command line arguments (there must be exactly 7).\n"; // should pru_int32_t to stderr i think
+        std::cerr << "Too many or too few command line arguments (there must be exactly 7).\n";
         return false;
     }
 
+    //reads command line args
     * sets_in_cache = atoi(argv[1]);
     * blocks_in_set = atoi(argv[2]);
     * bytes_in_block = atoi(argv[3]);
@@ -237,6 +282,7 @@ bool check_command_line_args(u_int32_t* sets_in_cache, u_int32_t* blocks_in_set,
     * write_type = argv[5];
     * eviction_type = argv[6];
 
+    //checks command line args are valid
     bool c1 = is_power_of_two(*sets_in_cache);
     bool c2 = is_power_of_two(*blocks_in_set);
     bool c3 = is_power_of_two(*bytes_in_block) && *bytes_in_block >= 4;
@@ -249,9 +295,9 @@ bool check_command_line_args(u_int32_t* sets_in_cache, u_int32_t* blocks_in_set,
         return true;
     }
 
+    //print to std::cerr
     std::cerr << "Invalid command line arguments.\n";
     return false;
-
 }
 
 int main(int argc, char** argv) {
@@ -264,6 +310,7 @@ int main(int argc, char** argv) {
         return 1; // Exit with a non-zero exit code
     }
 
+    //using tags rather than string comparison for efficiency
     write_allocate = allocate_type.compare("write-allocate") == 0;
     no_write_allocate = allocate_type.compare("no-write-allocate") == 0;
     write_through = write_type.compare("write-through") == 0;
@@ -271,8 +318,7 @@ int main(int argc, char** argv) {
     FIFO = eviction_type.compare("fifo") == 0;
     LRU = eviction_type.compare("lru") == 0;
 
-
-    //Once command line args are checked, so we can initialize our cache
+    //Once command line args are checked, we can initialize our cache
     Cache cache(sets_in_cache, blocks_in_set, bytes_in_block, write_allocate, no_write_allocate, write_through, write_back, FIFO, LRU);
     cache.begin_trace();
     cache.display_stats();
