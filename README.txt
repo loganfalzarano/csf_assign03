@@ -6,7 +6,7 @@ tying up lose ends with test trace files and efficiency/runtime solutions. In th
 together on debugging and improving readbility.
 
 
-In our trials we tested all 6 legal permutation of allocate type, write type, eviction type which includes:
+In our trials we tested all 6 legal permutations of allocate type, write type, and eviction type which includes:
 	write allocate, write back, and least recently used
 	write allocate, write through, and least recently used
 	no write allocate, write back, and least recently used
@@ -14,31 +14,32 @@ In our trials we tested all 6 legal permutation of allocate type, write type, ev
 	write allocate, write through, and first in first out
 	no write allocate, write back, and first in first out
 And we tested each of these on
-	8192 sets, 1 block each, 16 bytes of memory (aka a 1-way set-associative cache)
+	8192 sets, 1 block each, 16 bytes of memory (aka a 1-way set-associative cache) (direct mapped)
 	2048 sets, 4 block each, 16 bytes of memory (aka a 4-way set-associative cache)
 	1024 sets, 8 block each, 16 bytes of memory (aka a 8-way set-associative cache)
 	512 sets, 16 block each, 16 bytes of memory (aka a 8-way set-associative cache)
 	128 sets, 64 block each, 16 bytes of memory (aka a 64-way set-associative cache)
-
-direct mapped: 1024 sets, 1 block per set
-full associative: 1 set, 1024 sets
+	1 sets, 8192 block each, 16 bytes of memory (aka a 64-way set-associative cache) (fully associative)
 All of which have a cache capacity of 8192 bytes
-Each test was conducted on gcc.trace
+Each test was conducted on the trace file gcc.trace
 In determining best overall effectiveness we focused on store misses and total cycles. Our statistics show that
 write-allocate consistently has fewer misses than no-write-allocate, and when write allocate is paired with 
 write-back it also consistently has the lowest number of clock cycles. From this we can safely say that write-allocate
-and write-back together have the best overall effectiveness. LRU and fully associaive also appear to result in 
-fewer misses and cycles. Once we chose the write-allocate, write-back, LRU cache, we looked at associativity
-factor. Clock cycles and misses steadily decereased as our associativity increased, so it seems that the most effective 
-cache would be a fully associative, write-allocate, write-back, LRU cache that maximizes the associativity, which in our 
-trials would be a 64-way set-associative cache. We do understand that it is expensive and infeasible to maximize 
-associativity factor, so we find it most effective to choose a high associativity factor within reasonablee affordability.
-Below is the data we collected:
+and write-back together have the best overall effectiveness. LRU also appears to result in fewer misses and clock cycles.
+Once we chose the write-allocate, write-back, LRU cache, we looked at associativity factor. Clock cycles and misses 
+steadily decereased as our associativity increased, with the direct mapped cache producing the highest number of 
+misses and clock cycles, while the fully associative cache performed best. This information comes together to show that
+the most efficient cache would be a fully associative, write-allocate, write-back, LRU cache. We do understand that it 
+is expensive and often infeasible to maximize associativity factor, so we investigated at which point the benefit of increased
+associativity factor seemed to diminish. Going from the 4-way set-associative cache to the direct mapped 1-way set-associative 
+cache, our total clock cycles decreased by 4% when averaging across all permutations of allocate type, write type, and eviction 
+type, going from the 4-way set-associative cache to the 8-way set-associative cache, our total clock cycles decreased by less 
+than 1%, and then less and less thereafter. A similar pattern was identified with number of misses. In an effort to find the 
+most effective associativity factor within reasonablee affordability, it seems as though the 4-way set-associative cache provides 
+the most efficient solution, as any higher associativity factor does not result in a significant decrease in clock cycles.
+Therefore keeping in mind minimizing cost while maximixing effectiveness, we chose the 4-way set-associative write-allocate, 
+write-back, LRU cache.
 
-Direct map is horrible on clock cycles, and clock cycles significantly deecreasee until we reach 8 way set associative, after
-which we reach diminishing returns
-
-hbj
 1-way-set-associative	write-allocate write-back lru	no-write-allocate write-through lru	    write-allocate write-through lru	write-allocate write-back fifo	no-write-allocate write-through fifo	write-allocate write-through fifo
 Total loads	            318197	                        318197	                                318197	                            318197	                        318197	                                318197
 Total stores            97486	                        197486	                                197486	                            197486	                        197486	                                197486
@@ -87,3 +88,12 @@ Load misses	            2412	                        5990	                      
 Store hits	            188606	                        165216	                                188606	                            188570	                        165216	                                188570
 Store misses	        8880	                        32270	                                8880	                            8916	                        32270	                                8916
 Total cycles	        5893683	                        22628013	                            24781083	                        5978483	                        22628413	                            24840683				
+
+8192-way-associative  	write-allocate write-back lru	no-write-allocate write-through lru		write-allocate write-through lru	write-allocate write-back fifo	no-write-allocate write-through fifo	write-allocate write-through fifo
+Total loads				318197							318197									318197								318197							318197									318197
+Total stores			197486							197486									197486								197486							197486									197486
+Load hits				315790							312207									315790								315666							312207									315666
+Load misses				2407							5990									2407								2531							5990									2531
+Store hits				188612							165216									188612								188574							165216									188574
+Store misses			8874							32270									8874								8912							32270									8912
+Total cycles			5880483							22628013								24776683							5967683							22628013								24841483
