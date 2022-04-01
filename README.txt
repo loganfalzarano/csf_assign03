@@ -19,11 +19,15 @@ And we tested each of these on
 	1024 sets, 8 block each, 16 bytes of memory (aka a 8-way set-associative cache)
 	512 sets, 16 block each, 16 bytes of memory (aka a 8-way set-associative cache)
 	128 sets, 64 block each, 16 bytes of memory (aka a 64-way set-associative cache)
+
+direct mapped: 1024 sets, 1 block per set
+full associative: 1 set, 1024 sets
 All of which have a cache capacity of 8192 bytes
+Each test was conducted on gcc.trace
 In determining best overall effectiveness we focused on store misses and total cycles. Our statistics show that
 write-allocate consistently has fewer misses than no-write-allocate, and when write allocate is paired with 
 write-back it also consistently has the lowest number of clock cycles. From this we can safely say that write-allocate
-and write-back together have the best overall effectiveness. LRU and fully associative also appear to result in 
+and write-back together have the best overall effectiveness. LRU and fully associaive also appear to result in 
 fewer misses and cycles. Once we chose the write-allocate, write-back, LRU cache, we looked at associativity
 factor. Clock cycles and misses steadily decereased as our associativity increased, so it seems that the most effective 
 cache would be a fully associative, write-allocate, write-back, LRU cache that maximizes the associativity, which in our 
@@ -31,7 +35,10 @@ trials would be a 64-way set-associative cache. We do understand that it is expe
 associativity factor, so we find it most effective to choose a high associativity factor within reasonablee affordability.
 Below is the data we collected:
 
+Direct map is horrible on clock cycles, and clock cycles significantly deecreasee until we reach 8 way set associative, after
+which we reach diminishing returns
 
+hbj
 1-way-set-associative	write-allocate write-back lru	no-write-allocate write-through lru	    write-allocate write-through lru	write-allocate write-back fifo	no-write-allocate write-through fifo	write-allocate write-through fifo
 Total loads	            318197	                        318197	                                318197	                            318197	                        318197	                                318197
 Total stores            97486	                        197486	                                197486	                            197486	                        197486	                                197486
