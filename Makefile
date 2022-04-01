@@ -1,6 +1,6 @@
 CC = g++
 
-CFLAGS = -g -Wall -Wextra -pedantic -std=gnu11 -O2
+CFLAGS = -g -Wall -Wextra -pedantic -std=gnu++11 -O2
 
 %.o : %.c
 	$(CC) $(CFLAGS) -c $*.c -o $*.o
